@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 
 namespace BlazorEFIdentity
 {
@@ -16,6 +17,9 @@ namespace BlazorEFIdentity
 
             // Add services to the container.
             builder.Services.AddRazorComponents();
+
+            builder.Services.AddMudServices();
+
 
             builder.Services.AddCascadingAuthenticationState();
             builder.Services.AddScoped<IdentityUserAccessor>();

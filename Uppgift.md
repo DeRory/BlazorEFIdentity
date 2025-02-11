@@ -13,5 +13,7 @@
 
 7b. Skapa funktion att ta bort/lägga till roller för användare.
 
+7. Skapa en admin-sida (Behörighetslåst till admins med funktioner kopplade till Kontoadmin t.ex. funktion att ta bort/lägga till roller för användare)
+
 
 Vi ska använda Blazor, Identity, EF, Behörighetskrav, Autentisering och aukterisering. etc.

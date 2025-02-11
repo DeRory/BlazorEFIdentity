@@ -3,75 +3,105 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using BlazorEFIdentity.Data
+@using MudBlazor
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Profile</PageTitle>
+<div class="container mt-4">
+	<div class="row justify-content-center">
+		<div class="col-lg-6 col-md-8">
+			<div class="card shadow-sm">
+				<div class="card-header bg-primary text-white">
+					<h5 class="mb-0"><i class="bi bi-person-circle"></i> Profile</h5>
+				</div>
+				<div class="card-body">
+					<EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+						<DataAnnotationsValidator />
+						<ValidationSummary class="text-danger" role="alert" />
 
-<h3>Profile</h3>
-<StatusMessage />
+						<div class="form-floating mb-3">
+							<input type="text" value="@username" class="form-control" disabled />
+							<label>Username</label>
+						</div>
 
-<div class="row">
-    <div class="col-md-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" class="form-control" placeholder="Please choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Please enter your phone number." />
-                <label for="phone-number" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
-    </div>
+						<div class="form-floating mb-3">
+							<input type="email" value="@user.Email" class="form-control" disabled />
+							<label>Email</label>
+						</div>
+
+						<div class="form-floating mb-3">
+							<input type="text" value="@user.SocialSecurityNumber" class="form-control" disabled />
+							<label>Social Security Number</label>
+						</div>
+
+						<div class="form-floating mb-3">
+							<input type="text" value="@user.Address" class="form-control" disabled />
+							<label>Address</label>
+						</div>
+
+						<div class="form-floating mb-3">
+							<InputText @bind-Value="Input.PhoneNumber" class="form-control" />
+							<label>Phone number</label>
+							<ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+						</div>
+
+						<button type="submit" class="btn btn-success w-100">
+							<i class="bi bi-save"></i> Save Changes
+						</button>
+					</EditForm>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
+
+
 @code {
-    private ApplicationUser user = default!;
-    private string? username;
-    private string? phoneNumber;
+	private ApplicationUser user = default!;
+	private string? username;
+	private string? phoneNumber;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
+	[CascadingParameter]
+	private HttpContext HttpContext { get; set; } = default!;
 
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
+	[SupplyParameterFromForm]
+	private InputModel Input { get; set; } = new();
 
-    protected override async Task OnInitializedAsync()
-    {
-        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+	protected override async Task OnInitializedAsync()
+	{
+		user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+		username = await UserManager.GetUserNameAsync(user);
+		phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
-        Input.PhoneNumber ??= phoneNumber;
-    }
+		Input.PhoneNumber ??= phoneNumber;
+	}
 
-    private async Task OnValidSubmitAsync()
-    {
-        if (Input.PhoneNumber != phoneNumber)
-        {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-            }
-        }
+	private async Task OnValidSubmitAsync()
+	{
+		if (Input.PhoneNumber != phoneNumber)
+		{
+			var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+			if (!setPhoneResult.Succeeded)
+			{
+				RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+			}
+		}
 
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
-    }
+		await SignInManager.RefreshSignInAsync(user);
+		RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+	}
 
-    private sealed class InputModel
-    {
-        [Phone]
-        [Display(Name = "Phone number")]
-        public string? PhoneNumber { get; set; }
-    }
+	
+
+
+	private sealed class InputModel
+	{
+		[Phone]
+		[Display(Name = "Phone number")]
+		public string? PhoneNumber { get; set; }
+	}
 }

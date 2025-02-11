@@ -37,6 +37,25 @@
                 <label for="handle">Handle</label>
                 <ValidationMessage For="() => Input.Handle" class="text-danger" />
             </div>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" class="form-control" aria-required="true" placeholder="Phone Number" />
+                <label for="phone-number">Phone Number</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Address" class="form-control" aria-required="true" placeholder="Address" />
+                <label for="address">Address</label>
+                <ValidationMessage For="() => Input.Address" class="text-danger" />
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.SocialSecurityNumber" class="form-control" aria-required="true" placeholder="Social Security Number" />
+                <label for="social-security-number">Social Security Number</label>
+                <ValidationMessage For="() => Input.SocialSecurityNumber" class="text-danger" />
+            </div>
+
             <div class="form-floating mb-3">
                 <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
                 <label for="password">Password</label>
@@ -90,6 +109,11 @@
                 return;
             }
         }
+
+        user.PhoneNumber = Input.PhoneNumber;
+        user.Address = Input.Address;
+        user.SocialSecurityNumber = Input.SocialSecurityNumber;
+
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
@@ -168,5 +192,19 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
+
+        [Required]
+        [DataType(DataType.PhoneNumber)]
+        [Display(Name = "Phone Number")]
+        public string PhoneNumber { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Address")]
+        public string Address { get; set; } = "";
+
+        [Required]
+        [Display(Name = "Social Security Number")]
+        public string SocialSecurityNumber { get; set; } = "";
+
     }
 }

@@ -14,11 +14,11 @@ namespace BlazorEFIdentity.Data
 
         //public string Password { get; set; } Behövs ej då det finns i IdentityUser klassen.
 
-        public string SocialSecurityNumber { get; set; }
+        public string? SocialSecurityNumber { get; set; }
 
         public List<Account> Accounts { get; set; }
 
-        public string Address { get; set; }
+        public string? Address { get; set; }
 
         //public string TelephoneNumber { get; set; } Behövs ej då det finns i IdentityUser klassen.
 
