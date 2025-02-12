@@ -5,113 +5,114 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MudBlazor.Services;
+using Microsoft.AspNetCore.Components.Web;
+//using MudBlazor.Services;
 
 namespace BlazorEFIdentity
 {
-    public class Program
-    {
-        public static async Task Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
+	public class Program
+	{
+		public static async Task Main(string[] args)
+		{
+			var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddRazorComponents();
+			// Add services to the container.
+			builder.Services.AddRazorComponents()
+				.AddInteractiveServerComponents()
+				.AddInteractiveWebAssemblyComponents();
 
-            builder.Services.AddMudServices();
+			builder.Services.AddCascadingAuthenticationState();
+			builder.Services.AddScoped<IdentityUserAccessor>();
+			builder.Services.AddScoped<IdentityRedirectManager>();
+			builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
 
+			builder.Services.AddAuthorization();
+			builder.Services.AddAuthentication(options =>
+			{
+				options.DefaultScheme = IdentityConstants.ApplicationScheme;
+				options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+			})
+				.AddIdentityCookies();
 
-            builder.Services.AddCascadingAuthenticationState();
-            builder.Services.AddScoped<IdentityUserAccessor>();
-            builder.Services.AddScoped<IdentityRedirectManager>();
-            builder.Services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
+			//var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+			//builder.Services.AddDbContext<ApplicationDbContext>(options =>
+			//    options.UseSqlServer(connectionString));
 
-            builder.Services.AddAuthorization();
-            builder.Services.AddAuthentication(options =>
-                {
-                    options.DefaultScheme = IdentityConstants.ApplicationScheme;
-                    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-                })
-                .AddIdentityCookies();
+			builder.Services.AddDbContext<ApplicationDbContext>(options =>
+			options.UseSqlite("Data Source=sysdb.db"));
+			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-            //var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-            //builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            //    options.UseSqlServer(connectionString));
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite("Data Source=sysdb.db"));
-            builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-            builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddSignInManager()
-                .AddDefaultTokenProviders();
-            builder.Services.AddScoped<UserManager<ApplicationUser>>();
+			builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
+				.AddRoles<IdentityRole>()
+				.AddEntityFrameworkStores<ApplicationDbContext>()
+				.AddSignInManager()
+				.AddDefaultTokenProviders();
 
 
-            builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+			builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-            var app = builder.Build();
+			var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseMigrationsEndPoint();
-            }
-            else
-            {
-                app.UseExceptionHandler("/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
-            }
+			// Configure the HTTP request pipeline.
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseMigrationsEndPoint();
+			}
+			else
+			{
+				app.UseExceptionHandler("/Error");
+				// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+				app.UseHsts();
+			}
 
-            app.UseHttpsRedirection();
+			app.UseHttpsRedirection();
 
-            app.UseStaticFiles();
-            app.UseAntiforgery();
+			app.UseStaticFiles();
+			app.UseAntiforgery();
 
-            app.MapRazorComponents<App>();
+			app.MapRazorComponents<App>()
+				.AddInteractiveServerRenderMode()
+				.AddInteractiveWebAssemblyRenderMode(); // Lägg till detta
 
-            // Add additional endpoints required by the Identity /Account Razor components.
-            app.MapAdditionalIdentityEndpoints();
 
-            using (var scope = app.Services.CreateScope()) //Vi skapar en tjänst som gör ett master konto. GetRequiredServices innebär att den tjänste måste finnas.
-            {
-                var roleManager =
-                    scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-                var roles = new[] { "Admin", "User" };
+			// Add additional endpoints required by the Identity /Account Razor components.
+			app.MapAdditionalIdentityEndpoints();
 
-                foreach (var role in roles)
-                {
-                    if (!await roleManager.RoleExistsAsync(role))
-                    {
-                        await roleManager.CreateAsync(new IdentityRole(role));
-                    }
-                }
-            }
+			using (var scope = app.Services.CreateScope())
+			{
+				var roleManager =
+					scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+				var roles = new[] { "Admin", "User" };
 
-            using (var scope = app.Services.CreateScope()) //Vi skapar en tjänst som gör ett user konto.
-            {
-                var userManager =
-                    scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                string email = "admin@admin.se";
-                string password = "Abc123!";
+				foreach (var role in roles)
+				{
+					if (!await roleManager.RoleExistsAsync(role))
+					{
+						await roleManager.CreateAsync(new IdentityRole(role));
+					}
+				}
+			}
 
-                if (await userManager.FindByEmailAsync(email) == null)
-                {
-                    var user = new ApplicationUser();
-                    user.UserName = email;
-                    user.Email = email;
+			using (var scope = app.Services.CreateScope())
+			{
 
-                    await userManager.CreateAsync(user, password); //Vi creatar och skickar till databasen med angivna lösenord och mail.
-                    await userManager.AddToRoleAsync(user, "Admin"); //
-                }
+				var userManager =
+					scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+				string email = "admin@admin.se";
+				string password = "Abc123!";
 
-               
-            }
+				if (await userManager.FindByEmailAsync(email) == null)
+				{
+					var user = new ApplicationUser();
+					user.UserName = email;
+					user.Email = email;
 
-            app.Run();
-        }
-    }
+					await userManager.CreateAsync(user, password);
+					await userManager.AddToRoleAsync(user, "Admin");
+				}
+			}
+
+			app.Run();
+		}
+	}
 }

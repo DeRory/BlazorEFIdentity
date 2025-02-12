@@ -1,49 +1,17 @@
-﻿@page "/admin"
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using BlazorEFIdentity.Data
 @using BlazorEFIdentity.Components
 @using BlazorEFIdentity.Models
-@using Microsoft.AspNetCore.Components.Web;
-@rendermode InteractiveServer
 
+@page "/test"
 
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
 
-@attribute [Authorize(Roles = "Admin")]
+<h3>TestPage</h3>
+<a class="btn btn-success btn-sm" @onclick="AddRole">Make Admin</a>
 
-<h3>Admin Overview</h3>
-
-@if (users is null)
-{
-    <p>Loading users...</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Email</th>
-                <th>Roles</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in users)
-            {
-                <tr>
-                    <td>@user.Email</td>
-                    <td>@string.Join(", ", user.Roles)</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" @onclick="RemoveRole">Remove User Role</button>
-                        <a class="btn btn-success btn-sm" @onclick="AddRole">Make Admin</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
 
 @code {
     private List<UserWithRoles> users = new();
@@ -117,4 +85,5 @@ else
         public string Email { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
     }
+}
 }
