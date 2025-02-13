@@ -1,7 +1,11 @@
-﻿@page "/admin"
+﻿@* @page "/admin"
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using BlazorEFIdentity.Data
+@using BlazorEFIdentity.Components
+@using BlazorEFIdentity.Models
+@using Microsoft.AspNetCore.Components.Web;
+
 
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
@@ -31,9 +35,8 @@ else
                     <td>@user.Email</td>
                     <td>@string.Join(", ", user.Roles)</td>
                     <td>
-                        <button class="btn btn-danger btn-sm" @onclick="@(() => RemoveRole(user, "User"))">Remove User Role</button>
-                        <button class="btn btn-success btn-sm" @onclick="@(() => AddRole(user, "Admin"))">Make Admin</button>
-
+                        <button class="btn btn-danger btn-sm" @onclick="RemoveRole">Remove User Role</button>
+                        <a class="btn btn-success btn-sm" @onclick="AddRole">Make Admin</a>
                     </td>
                 </tr>
             }
@@ -43,6 +46,10 @@ else
 
 @code {
     private List<UserWithRoles> users = new();
+    public string adminRole = "Admin";
+    public string userRole = "User";
+    public ApplicationUser user;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,19 +73,20 @@ else
         }
     }
 
-    private async Task AddRole(UserWithRoles user, string role)
+    private async Task AddRole()
     {
-        var appUser = await UserManager.FindByIdAsync(user.Id);
+        var newUser = users.FirstOrDefault();
+        var appUser = await UserManager.FindByIdAsync(newUser.Id);
         if (appUser == null) return;
 
-        if (!await RoleManager.RoleExistsAsync(role))
-        {
-            await RoleManager.CreateAsync(new IdentityRole(role)); // Skapa rollen om den saknas
-        }
+        // if (!await RoleManager.RoleExistsAsync(role))
+        // {
+        //     await RoleManager.CreateAsync(new IdentityRole(role)); // Skapa rollen om den saknas
+        // }
 
-        if (!await UserManager.IsInRoleAsync(appUser, role))
+        if (!await UserManager.IsInRoleAsync(appUser, adminRole))
         {
-            var result = await UserManager.AddToRoleAsync(appUser, role);
+            var result = await UserManager.AddToRoleAsync(appUser, adminRole);
             if (result.Succeeded)
             {
                 await LoadUsers(); // Uppdatera listan
@@ -86,21 +94,20 @@ else
         }
     }
 
-    private async Task RemoveRole(UserWithRoles user, string role)
+    private async Task RemoveRole()
     {
         var appUser = await UserManager.FindByIdAsync(user.Id);
         if (appUser == null) return;
 
-        if (await UserManager.IsInRoleAsync(appUser, role))
+        if (await UserManager.IsInRoleAsync(appUser, adminRole))
         {
-            var result = await UserManager.RemoveFromRoleAsync(appUser, role);
+            var result = await UserManager.RemoveFromRoleAsync(appUser, adminRole);
             if (result.Succeeded)
             {
                 await LoadUsers(); // Uppdatera listan
             }
         }
     }
-
 
 
     private class UserWithRoles
@@ -108,5 +115,147 @@ else
         public string Id { get; set; }
         public string Email { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
+    }
+}
+
+
+ *@
+
+
+
+@page "/admin"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@using BlazorEFIdentity.Data
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+@attribute [Authorize(Roles = "Admin")]
+
+<h3>Admin Panel</h3>
+
+@if (users == null)
+{
+    <p>Loading users...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Roles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr class="@((selectedUser != null && selectedUser.Id == user.Id) ? "table-primary" : "")">
+                    <td>@user.Email</td>
+                    <td>@string.Join(", ", user.Roles)</td>
+                    <td>
+                        <button class="btn btn-info btn-sm" @onclick="() => SelectUser(user.Id)">Select</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (selectedUser != null)
+    {
+        <h4>Selected User: @selectedUser.Email</h4>
+        <button class="btn btn-success btn-sm" @onclick="MakeAdmin">Make Admin</button>
+        <button class="btn btn-warning btn-sm" @onclick="MakeUser">Make User</button>
+        <button class="btn btn-danger btn-sm" @onclick="RemoveUserRole">Remove User Role</button>
+        <button class="btn btn-dark btn-sm" @onclick="RemoveAdminRole">Remove Admin Role</button>
+        <button class="btn btn-outline-danger btn-sm" @onclick="DeleteUser">Delete User</button>
+    }
+}
+
+@code {
+    private List<UserWithRoles> users = new();
+    private ApplicationUser selectedUser;
+    private string adminRole = "Admin";
+    private string userRole = "User";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users.Clear();
+        var allUsers = UserManager.Users.ToList();
+
+        foreach (var user in allUsers)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            users.Add(new UserWithRoles
+                {
+                    Id = user.Id,
+                    Email = user.Email ?? string.Empty,
+                    Roles = roles.ToList()
+                });
+        }
+
+        selectedUser = null; // Nollställ vald användare vid varje laddning
+        StateHasChanged();
+    }
+
+    private async Task SelectUser(string userId)
+    {
+        selectedUser = await UserManager.FindByIdAsync(userId);
+    }
+
+    private async Task MakeAdmin()
+    {
+        if (selectedUser == null) return;
+
+        await UserManager.AddToRoleAsync(selectedUser, adminRole);
+        await LoadUsers();
+    }
+
+    private async Task MakeUser()
+    {
+        if (selectedUser == null) return;
+
+        await UserManager.AddToRoleAsync(selectedUser, userRole);
+        await LoadUsers();
+    }
+
+    private async Task RemoveUserRole()
+    {
+        if (selectedUser == null) return;
+
+        await UserManager.RemoveFromRoleAsync(selectedUser, userRole);
+        await LoadUsers();
+    }
+
+    private async Task RemoveAdminRole()
+    {
+        if (selectedUser == null) return;
+        await UserManager.RemoveFromRoleAsync(selectedUser, adminRole);
+        await LoadUsers();
+    }
+
+
+    private async Task DeleteUser()
+    {
+        if (selectedUser == null) return;
+
+        await UserManager.DeleteAsync(selectedUser);
+        await LoadUsers();
+    }
+
+    private class UserWithRoles
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public List<string> Roles { get; set; } = new();
     }
 }
