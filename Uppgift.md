@@ -22,7 +22,18 @@ vi ska kunna ha en lista av transaktioner, vi vill även kunna se om kontot är 
 + LÅSA KONTO
 
 
+Skapa klass, lägg UserManager, (För transaktioner och olika typer av konton)
 
-1. 
+
+Services folder
+EF Core, spara data, userManager för att hämta användaren som är inloggad, 
+Skapa en formulär, struktur, 
+
+NY service mapp, i den en .cs fil som är en klass, BankAccountService, och i den så vill man ha 3 dependecies eller två, EF (en db context) och en db manager, 
+2 properties och har samma typ som dbcontext och userManager, Och i konstruktorn tilldelar jag de properties, props från kontruktor ta in usermanager och db
+    skapa funktion set acc to user, ta in en parameter setbankaccount to user.
+
+
 Vi ska använda Blazor, Identity, EF, Behörighetskrav, Autentisering och aukterisering. etc.
+
 
