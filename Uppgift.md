@@ -34,6 +34,23 @@ NY service mapp, i den en .cs fil som är en klass, BankAccountService, och i de
     skapa funktion set acc to user, ta in en parameter setbankaccount to user.
 
 
+9. Jag vill skapa en sida som: överförar pengar till olika konton som användaren kan välja.
+Och i den sidan vill jag kunna se transaktionshistoriken, allt från från vem pengar skickades till, och till vem. Vilken tid och datum det skedde. 
+Hur mycket saldot var. Vilken valuta. Samt vill jag se meddelande om användaren har skrivit det. Och alla transaktioner ska ha ett nummer.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Vi ska använda Blazor, Identity, EF, Behörighetskrav, Autentisering och aukterisering. etc.
 
 
