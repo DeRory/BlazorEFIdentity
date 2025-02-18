@@ -25,19 +25,16 @@ namespace BlazorEFIdentity.Services
         // Hämta alla bankkonton för den inloggade användaren
         public async Task<List<Account>> GetUserAccountsAsync(ApplicationUser user)
         {
-            return await _dbContext.Accounts
-                .Where(a => a.AccountName == user.UserName) // Filtrera konton för användaren
+            
+
+            var account = await _dbContext.Accounts
+                .Where(a => a.UserId == user.Id)
                 .ToListAsync();
+
+            return account;
         }
 
-        // Gets the users account. This is a method which has a parameter which brings ApplicationUser user.
-        public async Task<List<Account>> GetAccountsAsync(ApplicationUser user)
-        {
-            return await _dbContext.Accounts //Return a list with accounts within the database. The return has conditions. whereas its gets all AccountName which matches the users username.
-                                     // and we use await because we fetch data from the database and must wait till the operation is done.
-                .Where(a => a.AccountName == user.UserName)
-                .ToListAsync();
-        }
+
 
         // Create a new bank account. This is a task with parameters. Fetches user and account.
         public async Task CreateAccountAsync(ApplicationUser user, Account account)
@@ -52,7 +49,16 @@ namespace BlazorEFIdentity.Services
             await _dbContext.SaveChangesAsync(); // We save the changes within the database with this line of code.
         }
 
+        public async Task DeleteAccountAsync(ApplicationUser user, int accountId)
+        {
+            var account = await _dbContext.Accounts
+                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == user.Id);
 
-
+            if (account != null)
+            {
+                _dbContext.Accounts.Remove(account);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
     }
 }

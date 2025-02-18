@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Web;
+using BlazorEFIdentity.Services;
 //using MudBlazor.Services;
 
 namespace BlazorEFIdentity
@@ -51,7 +52,13 @@ namespace BlazorEFIdentity
 
 			builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-			var app = builder.Build();
+            builder.Services.AddScoped<BankAccountService>();
+
+            builder.Services.Configure<CircuitOptions>(options => options.DetailedErrors = true); //Felloggning
+
+
+
+            var app = builder.Build();
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment())

@@ -2,74 +2,150 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
 @using BlazorEFIdentity.Data
-
+@using BlazorEFIdentity.Models
+@using BlazorEFIdentity.Services
 @rendermode InteractiveServer
 
+@* Detta ger oss tillgång till tjänster/funktioner i Service filen som hanterar bankkontot. *@
+@inject BankAccountService AccountService 
+@*Används för att få den inloggade användaren*@
+@inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 
-@attribute [Authorize]
 
+@* Vad vill jag göra? Jag har skapat en sida med relevant CSS, där jag vill kunna skapa en bankkonto knytet till en användare, där användaren kan lägga till saldo för respektive konto.
+Användaren ska kunna även välja om det är exempelvis ISK eller sparkonto. Jag vill även kunna se ifall kontots status är aktiv eller ej. Jag vill kunna se transaktionshistorik.
+För det skulle jag nog behöva lägga till att jag måste använda servicen i detta komponent men även AuthenticationStateProvider AuthStateProvider eftersom den är bara inloggade användare som kan göra detta. *@
+
+@attribute [Authorize]
 
 <h3>Create an account! </h3>
 
-<div class="mb-3">
-	<label for="exampleFormControlInput1" class="form-label">Enter an account name for your saving. </label>
-	<input type="email" class="form-control" id="exampleFormControlInput1" placeholder="Enter your name here!">
-</div>
-<div class="mb-3">
-	<label for="exampleFormControlInput2" class="form-label">Balance</label>
-	<input type="email" class="form-control" id="exampleFormControlInput2" placeholder="Amount of money you wish to insert!">
-</div>
+@* EditForm Model raden kopplar formuläret nedan till newAccount modellen och kör en CreateAccount() när man klickar på Create.*@
 
-<div class="form-check">
-	<input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
-	<label class="form-check-label" for="flexCheckDefault">
-		Active Account
-	</label>
-</div>
-<div> 
-	<p></p>
-</div>
-<button type="button" class="btn btn-dark">Create</button>
-<div>
-    <p></p>
-</div>
+<EditForm Model="newAccount" OnValidSubmit="CreateAccount">
+    <div class="mb-3">
+        <label class="form-label">Enter an account name:</label>
+        <InputText class="form-control" @bind-Value="newAccount.AccountName" placeholder="Enter account name" />
+    </div>
 
-<h2>Your accounts</h2>
+    <div class="mb-3">
+        <label class="form-label">Account Number:</label>
+        <InputText class="form-control" @bind-Value="newAccount.AccountNumber" placeholder="Enter account number" />
+    </div>
 
-<table class="table table-dark table-striped">
-    <thead>
-        <tr>
-            <th scope="col">Account Name</th>
-            <th scope="col">Account Number</th>
-            <th scope="col">Balance</th>
-            <th scope="col">Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th scope="row">1</th>
-            <td>Mark</td>
-            <td>Otto</td>
-            <td></td>
-        </tr>
-        <tr>
-            <th scope="row">2</th>
-            <td>Jacob</td>
-            <td>Thornton</td>
-            <td></td>
-        </tr>
-        <tr>
-            <th scope="row">3</th>
-            <td colspan="2">Larry the Bird</td>
-            <td></td>
-        </tr>
-    </tbody>
-</table>
+    <div class="mb-3">
+        <label class="form-label">Balance:</label>
+        <InputNumber class="form-control" @bind-Value="newAccount.Balance" placeholder="Enter initial balance" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Enter Account Type:</label>
+        <InputText class="form-control" @bind-Value="newAccount.AccountType" placeholder="Enter account type (e.g. Savings, ISK)" />
+    </div>
+
+    <div class="form-check mb-3">
+        <InputCheckbox class="form-check-input" @bind-Value="newAccount.ActiveAccount" />
+        <label class="form-check-label">Active Account</label>
+    </div>
+
+    <button type="submit" class="btn btn-dark">Create</button>
+</EditForm>
+
+<h3>Your Accounts</h3>
+
+@if (accounts == null)
+{
+    <p>Loading...</p>
+}
+else if (accounts.Count == 0)
+{
+    <p>You have no accounts yet.</p>
+}
+else
+{
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Account Name</th>
+                <th>Account Number</th>
+                <th>Balance</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var account in accounts)
+            {
+                <tr>
+                    <td>@account.AccountName</td>
+                    <td>@account.AccountNumber</td>
+                    <td>@account.Balance</td>
+                    <td>@account.AccountType</td>
+                    <td>@(account.ActiveAccount ? "Active" : "Inactive")</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteAccount(account.Id)">Delete</button>
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
 
 
 @code {
-    //oninitialized
-        //await inloggade user, hitta ID och tillsätta den till Account entitet innan service funktionen körs
+    private List<Account> accounts = new();
+    private Account newAccount = new Account();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user == null)
+        {
+            return;
+        }
+        accounts = await AccountService.GetUserAccountsAsync(user);
+    }
+
+
+    private async Task CreateAccount()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user == null)
+        {
+            return;
+        }
+
+        newAccount.UserId = user.Id;
+        await AccountService.CreateAccountAsync(user, newAccount);
+
+        accounts = await AccountService.GetUserAccountsAsync(user);
+
+        newAccount = new Account(); // Reset form
+    }
+
+    private async Task DeleteAccount(int accountId)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user == null)
+        {
+            return;
+        }
+
+        await AccountService.DeleteAccountAsync(user, accountId);
+
+        accounts = await AccountService.GetUserAccountsAsync(user);
+
+    }
+
 }
