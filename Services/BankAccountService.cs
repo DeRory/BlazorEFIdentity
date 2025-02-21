@@ -60,5 +60,39 @@ namespace BlazorEFIdentity.Services
                 await _dbContext.SaveChangesAsync();
             }
         }
+
+        public async Task TransferBalanceAsync(ApplicationUser user, int accountId, int destinationAccountId, decimal amount)
+        {
+            var account = await _dbContext.Accounts //Hittar rätt konto med relevans till Usern
+                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == user.Id);
+
+            if (account == null)
+            {
+                return;
+            }
+
+            if (account.Balance < amount) //Kollar att saldot är tillräckligt
+            {
+                return;
+            }
+
+            var destinationAccount = await _dbContext.Accounts //Hittar mottagarens konto
+                .FirstOrDefaultAsync(a => a.Id == destinationAccountId);
+
+            if (destinationAccount == null) //En check som kollar ifall mottagarkontot existerar
+            {
+                return;
+            }
+
+            //Nu behöver jag skapa logik som uppdaterar båda kontonas saldo.
+            account.Balance -= amount; 
+            destinationAccount.Balance += amount;
+
+            await _dbContext.SaveChangesAsync();
+
+        }
+
+
+
     }
 }

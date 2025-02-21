@@ -1,22 +1,145 @@
-﻿<h3>PaymentTransfer</h3>
+﻿@rendermode InteractiveServer
+@inject BankAccountService AccountService
+@inject AuthenticationStateProvider AuthStateProvider
+@* Detta används för att hantera användaruppgifter, UserManager och ApplicationUser är ASP.NET egna boilerplate template *@
+@inject UserManager<ApplicationUser> UserManager
+@* Detta används för att kunna navigera mellan sidor i Blazor *@
+@inject NavigationManager Navigation
 
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using BlazorEFIdentity.Data
+@using BlazorEFIdentity.Models
+@using BlazorEFIdentity.Services
+@using Microsoft.AspNetCore.Identity
+
+@page "/PaymentTransfer"
+
+<h3>Balance Transfer</h3>
+
+<EditForm Model="transferModel" OnValidSubmit="TransferBalance">
+    @* Användaren ska kunna välja från vilket konto den vill överföra pengar ifrån *@
+    <div class="mb-3">
+        <label>From account:</label>
+        <InputSelect class="form-select-lg mb-3" @bind-Value="selectedAccountId" aria-label="Large select example">
+            <option value="0">Select Account</option>
+            @foreach (var account in accounts)
+            {
+                <option value="@account.Id">@account.AccountName - Balance: @account.Balance</option>
+            }
+        </InputSelect>
+    </div>
+
+    @* Användaren ska kunna välja till vilket konto *@
+    <div class="mb-3">
+        <label>To account:</label>
+        <InputSelect class="form-select-lg mb-3" @bind-Value="selectedDestinationAccountId" aria-label="Large select example">
+            <option value="0">Select Account</option>
+            @foreach (var account in accounts)
+            {
+                <option value="@account.Id">@account.AccountName</option>
+            }
+        </InputSelect>
+    </div>
+
+
+    @*   Jag vill att användaren ska kunna välja belopp*@
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text">Balance</span>
+        </div>
+        <InputNumber class="form-control" @bind-Value="transferAmount" placeholder="Enter amount" />
+
+
+
+        @*   Jag vill att användaren ska kunna välja vilken valuta mellan SEK, USD och EUR *@
+        <InputSelect class="form-select" @bind-Value="selectedCurrency">
+            <option value="SEK">SEK</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+        </InputSelect>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Transfer your Balance</button>
+
+</EditForm>
 
 
 @code {
+
+    private List<Account> accounts = new(); // Lista med användarens konton
+    private TransferModel transferModel = new(); // Temporär modell som lagrar data från användaren.
+    private int selectedAccountId; // Konto att skicka pengar från
+    private int selectedDestinationAccountId; // Konto att skicka pengar till
+    private decimal transferAmount; //  Belopp att överföra
+    private string selectedCurrency = "SEK"; // Standardvaluta
+    private string transferMessage; // Meddelande vid lyckad överföring
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user == null) return;
+
+        accounts = await AccountService.GetUserAccountsAsync(user);
+    }
+
+
+    private async Task TransferBalance()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user == null)
+        {
+            return;
+        }
+
+        if (selectedAccountId == 0 || selectedDestinationAccountId == 0 || transferAmount <= 0)
+        {
+            return;
+        }
+
+        await AccountService.TransferBalanceAsync(user, selectedAccountId, selectedDestinationAccountId, transferAmount);
+        accounts = await AccountService.GetUserAccountsAsync(user);
+
+        transferMessage = "Transfer successful!";
+
+    }
+
+    private class TransferModel
+    {
+        public int FromAccountId { get; set; }
+        public int ToAccountId { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; } = "SEK"; // Standardvaluta
+    }
+
 
 }
 
 
 @* Jag vill skapa en sida som: 
 1. Överförar pengar till olika konton som användaren kan välja.
-2. Och i den sidan vill jag kunna se transaktionshistoriken, allt från från vem pengar skickades till, och till vem. 
-3. Vilken tid och datum det skedde.
-4. Hur mycket saldot var. 
-5. Vilken valuta. 
-6. Samt vill jag se meddelande om användaren har skrivit det. 
-7. Och alla transaktioner ska ha ett nummer. 
-8. Lägg till även en kontroll att överföringen kan bara ske till existerande konton och inte får vara över saldot.
+2. Lägg till även en kontroll att överföringen kan bara ske till existerande konton och inte får vara över saldot.
 
-Vad för tools: 
 
+1. Och i den sidan vill jag kunna se transaktionshistoriken, allt från från vem pengar skickades till, och till vem. 
+2. Vilken tid och datum det skedde.
+3. Hur mycket saldot var. 
+4. Vilken valuta. 
+5. Samt vill jag se meddelande om användaren har skrivit det. 
+6. Och alla transaktioner ska ha ett nummer. 
+
+Vad behöver jag tänka på:
+Behöver använda mig utav databasen dbcontext för datahanteringen, dvs hämta, skicka, lagra etc.
+Behöver AuthenticationStateProvider som ska kolla användarens behörighet, åtkomst eller ej dvs.
+Möjligtvis en inject av BankAccountService dock ej klargjorda funktioner för överföring osv.
+Behöver en Attrbiute Authorization role till user eller admin som gör att bara dom kan läsa sidan.
+
+
+Detta blev mer som en komponent just nu.
 *@
+

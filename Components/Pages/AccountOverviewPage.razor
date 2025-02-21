@@ -42,12 +42,18 @@ För det skulle jag nog behöva lägga till att jag måste använda servicen i d
 
 <h3>Create an account! </h3>
 
+
+<ul class="nav nav-underline ">
+     <li class="nav-item">
+        <a class="nav-link active" aria-current="page" href="/AccountOverview">Account Overview</a>
+
 @* EditForm Model raden kopplar formuläret nedan till newAccount modellen och kör en CreateAccount() när man klickar på Create.*@
 <EditForm Model="newAccount" OnValidSubmit="CreateAccount">
-
-    
+    <div>
+        <p></p>
+    </div>
     <div class="mb-3">
-        <label class="form-label">Enter an account name:</label>
+        <label class="form-label">Enter account name:</label>
         <InputText class="form-control" @bind-Value="newAccount.AccountName" placeholder="Enter account name" />
     </div>
 
@@ -74,6 +80,16 @@ För det skulle jag nog behöva lägga till att jag måste använda servicen i d
    @*  Raden nedan skickar formuläret och triggar igång CreateAccount() funktionen *@
     <button type="submit" class="btn btn-dark">Create</button> 
 </EditForm>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="/PaymentTransfer">Balance Transfer</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="/TransactionHistory">Transaction History</a>
+    </li>
+   
+</ul>
 
 <h3>Your Accounts</h3>
 
